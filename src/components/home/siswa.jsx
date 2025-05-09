@@ -18,7 +18,7 @@ const Home = () => {
         <h2 className="text-2xl font-bold text-gray-800 mb-8 text-center">Selamat Datang, {currentUser.displayName || currentUser.email}</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          <Link to="/sertifikat" className="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition-all duration-300">
+          <Link to="/eskul" className="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition-all duration-300">
             <h3 className="text-lg font-semibold text-gray-700 mb-2">Sertifikat</h3>
             <p className="text-gray-500 text-sm">Lihat dan kelola sertifikat kamu di sini.</p>
           </Link>

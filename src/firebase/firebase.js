@@ -1,6 +1,8 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore, collection } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
+
 
 const firebaseConfig = {
   apiKey: "AIzaSyDNTe-hBBitu_OgmM3qpufHMl--P0IZggc",
@@ -17,6 +19,8 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const firestore = getFirestore(app);
 const db = firestore; // Alias untuk kompatibilitas
+const storage = getStorage(app);
+
 
 // Collections
 const usersCollection = collection(firestore, "users");
@@ -27,5 +31,6 @@ export {
   firestore,
   db, // Tambahkan ekspor ini
   usersCollection,
-  otpCollection 
+  otpCollection,
+  storage
 };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db } from '../../firebase/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 
@@ -14,9 +14,10 @@ const ProfilePage = () => {
     motivation: '',
     generation: '',
   });
-  const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [eskulList, setEskulList] = useState([]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -41,27 +42,37 @@ const ProfilePage = () => {
       }
     };
 
+    const fetchEskul = async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const q = query(collection(db, 'eskul'), where('userId', '==', user.uid));
+      const querySnapshot = await getDocs(q);
+
+      const eskulData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setEskulList(eskulData);
+    };
+
     fetchProfile();
+    fetchEskul();
   }, []);
 
   const handleSave = async () => {
     setLoading(true);
     const user = auth.currentUser;
-  
+
     if (!user) {
       setError('User tidak ditemukan');
       setLoading(false);
       return;
     }
-  
+
     try {
-      // Pastikan untuk menyertakan role yang sudah ada sebelumnya
       const docSnap = await getDoc(doc(db, 'users', user.uid));
-      const currentRole = docSnap.exists() ? docSnap.data().role : 'user'; // Ambil role jika ada
-  
+      const currentRole = docSnap.exists() ? docSnap.data().role : 'user';
+
       await updateProfile(user, { displayName: userData.name });
-  
-      // Simpan data pengguna beserta role-nya
+
       await setDoc(doc(db, 'users', user.uid), {
         name: userData.name,
         address: userData.address,
@@ -69,9 +80,9 @@ const ProfilePage = () => {
         motivation: userData.motivation,
         generation: userData.generation,
         email: user.email,
-        role: currentRole,  // Pastikan untuk menyimpan role yang sama
+        role: currentRole,
       });
-  
+
       setEditing(false);
     } catch (err) {
       setError('Gagal menyimpan perubahan: ' + err.message);
@@ -79,7 +90,6 @@ const ProfilePage = () => {
       setLoading(false);
     }
   };
-  
 
   return (
     <div className="min-h-screen bg-white w-full">
@@ -133,7 +143,7 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        <div className="px-6 pb-6 flex justify-end">
+        <div className="px-6 pb-4 flex justify-end">
           {editing ? (
             <button
               onClick={handleSave}
@@ -153,10 +163,25 @@ const ProfilePage = () => {
           )}
         </div>
 
-        {/* Back Button */}
+        {/* ESKUL SECTION */}
+        <div className="px-6 pb-8">
+          <h3 className="text-xl font-bold mb-4">Eskul</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {eskulList.map((eskul) => (
+              <div key={eskul.id} className="bg-gray-100 border shadow rounded-lg p-4">
+    <h4 className="font-semibold text-lg mb-1">{eskul.nama}</h4>
+    <p className="text-sm text-gray-600 mb-1">Lokasi: {eskul.lokasi}</p>
+    <p className="text-sm text-gray-500">
+      Tanggal: {new Date(eskul.tanggal).toLocaleDateString()}
+    </p>
+  </div>
+            ))}
+          </div>
+        </div>
+
         <div className="px-6 pb-6">
           <button
-            onClick={() => navigate(-1)} // Navigate back to the previous page
+            onClick={() => navigate(-1)}
             className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
           >
             Back

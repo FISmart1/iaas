@@ -13,6 +13,7 @@ import { useAuth } from "./contexts/authContext";
 import HeaderPage from "./components/header";
 import Chat from "./pages/Chatsiswa.jsx"
 import ChatRoomGuru from "./pages/Chatguru.jsx";
+import Eskul from "./components/form/Eskul.jsx";
 
 // Buat komponen layout utama
 const MainLayout = ({ children }) => {
@@ -96,6 +97,14 @@ function App() {
       element: (
 
             <AdminDashboard />
+
+      ),
+    },
+    {
+      path: "/eskul",
+      element: (
+
+            <Eskul />
 
       ),
     },
