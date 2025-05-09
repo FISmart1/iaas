@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { addDoc, collection } from 'firebase/firestore';
+import { addDoc, collection, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase/firebase';
 import { useAuth } from '../../contexts/authContext';
 import { useNavigate } from 'react-router-dom';
@@ -10,7 +10,8 @@ const EskulForm = () => {
 
   const [eskulData, setEskulData] = useState({
     nama: '',
-    tanggalMengikuti: '',
+    tanggal: '',
+    lokasi: '',
     deskripsi: '',
   });
 
@@ -32,11 +33,14 @@ const EskulForm = () => {
     setLoading(true);
     try {
       await addDoc(collection(db, 'eskul'), {
-        ...eskulData,
+        nama: eskulData.nama,
+        tanggal: Timestamp.fromDate(new Date(eskulData.tanggal)),
+        lokasi: eskulData.lokasi,
+        deskripsi: eskulData.deskripsi,
         userId: currentUser.uid,
         createdAt: new Date(),
       });
-      navigate('/siswa'); // Atau ganti dengan rute lain
+      navigate('/siswa');
     } catch (err) {
       setError('Gagal menyimpan data: ' + err.message);
     } finally {
@@ -67,8 +71,20 @@ const EskulForm = () => {
           <label className="block font-semibold">Tanggal Mengikuti</label>
           <input
             type="date"
-            name="tanggalMengikuti"
-            value={eskulData.tanggalMengikuti}
+            name="tanggal"
+            value={eskulData.tanggal}
+            onChange={handleChange}
+            required
+            className="w-full border px-3 py-2 rounded"
+          />
+        </div>
+
+        <div>
+          <label className="block font-semibold">Lokasi</label>
+          <input
+            type="text"
+            name="lokasi"
+            value={eskulData.lokasi}
             onChange={handleChange}
             required
             className="w-full border px-3 py-2 rounded"

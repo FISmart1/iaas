@@ -1,5 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { collection, query, where, onSnapshot, addDoc, orderBy, serverTimestamp } from 'firebase/firestore';
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  addDoc,
+  orderBy,
+  serverTimestamp,
+  doc,
+  deleteDoc,
+  updateDoc,
+} from 'firebase/firestore';
 import { firestore } from '../firebase/firebase';
 import { useAuth } from '../contexts/authContext';
 import { Link } from 'react-router-dom';
@@ -11,8 +22,8 @@ const ChatRoom = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
+  const [unreadMap, setUnreadMap] = useState({});
 
-  // Ambil semua user yang bukan currentUser
   useEffect(() => {
     const q = query(collection(firestore, 'users'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -21,14 +32,11 @@ const ChatRoom = () => {
         .filter(user => user.email !== currentUser.email);
       setUsers(userList);
     });
-
     return () => unsubscribe();
   }, []);
 
-  // Ambil pesan jika ada user yang dipilih
   useEffect(() => {
     if (!selectedUser) return;
-
     const chatId = [currentUser.uid, selectedUser.id].sort().join('_');
     const q = query(
       collection(firestore, 'messages', chatId, 'chats'),
@@ -36,17 +44,45 @@ const ChatRoom = () => {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const msgs = snapshot.docs.map(doc => doc.data());
+      const msgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setMessages(msgs);
     });
 
-    return () => unsubscribe();
+    const unreadQ = query(
+      collection(firestore, 'messages', chatId, 'chats'),
+      where('receiverId', '==', currentUser.uid),
+      where('read', '==', false)
+    );
+    const readUnsub = onSnapshot(unreadQ, (snapshot) => {
+      snapshot.docs.forEach(docSnap => {
+        updateDoc(docSnap.ref, { read: true });
+      });
+    });
+
+    return () => {
+      unsubscribe();
+      readUnsub();
+    };
   }, [selectedUser]);
 
-  // Kirim pesan
+  useEffect(() => {
+    const unsubList = users.map(user => {
+      const chatId = [currentUser.uid, user.id].sort().join('_');
+      const q = query(
+        collection(firestore, 'messages', chatId, 'chats'),
+        where('receiverId', '==', currentUser.uid),
+        where('read', '==', false)
+      );
+
+      return onSnapshot(q, (snap) => {
+        setUnreadMap(prev => ({ ...prev, [user.id]: !snap.empty }));
+      });
+    });
+    return () => unsubList.forEach(unsub => unsub());
+  }, [users]);
+
   const sendMessage = async () => {
     if (!newMessage.trim()) return;
-
     const chatId = [currentUser.uid, selectedUser.id].sort().join('_');
     const messageRef = collection(firestore, 'messages', chatId, 'chats');
 
@@ -54,10 +90,14 @@ const ChatRoom = () => {
       text: newMessage,
       senderId: currentUser.uid,
       receiverId: selectedUser.id,
-      createdAt: serverTimestamp()
+      createdAt: serverTimestamp(),
+      read: false,
     });
-
     setNewMessage('');
+  };
+
+  const deleteMessage = async (chatId, messageId) => {
+    await deleteDoc(doc(firestore, 'messages', chatId, 'chats', messageId));
   };
 
   const filteredUsers = users.filter(
@@ -68,41 +108,38 @@ const ChatRoom = () => {
 
   return (
     <div className="flex h-screen">
-      {/* Sidebar Users */}
       <div className="w-1/4 border-r bg-white p-4">
         <Link to="/siswa">
           <button className="bg-gray-500 text-white px-4 py-2 rounded mb-4">
             Kembali ke Dashboard
           </button>
         </Link>
-        
         <input
           type="text"
           placeholder="Cari nama atau email"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border border-gray-300 rounded mb-4"
         />
-
         <div className="space-y-2">
           {filteredUsers.map((user) => (
             <div
               key={user.id}
               onClick={() => setSelectedUser(user)}
-              className={`cursor-pointer p-2 rounded-lg ${
-                selectedUser?.id === user.id
-                  ? 'bg-blue-100 font-bold'
-                  : 'hover:bg-gray-100'
+              className={`cursor-pointer p-2 rounded-lg flex justify-between items-center ${
+                selectedUser?.id === user.id ? 'bg-blue-100 font-bold' : 'hover:bg-gray-100'
               }`}
             >
-              <div>{user.name}</div>
-              <div className="text-sm text-gray-500">{user.email}</div>
+              <div>
+                <div>{user.name}</div>
+                <div className="text-sm text-gray-500">{user.email}</div>
+              </div>
+              {unreadMap[user.id] && <span className="text-red-500 text-xs font-bold">•</span>}
             </div>
           ))}
         </div>
       </div>
 
-      {/* Chat Panel */}
       <div className="flex-1 flex flex-col bg-gray-50">
         {selectedUser ? (
           <>
@@ -110,18 +147,30 @@ const ChatRoom = () => {
               Chat dengan {selectedUser.name}
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
-              {messages.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className={`max-w-xs p-2 rounded ${
-                    msg.senderId === currentUser.uid
-                      ? 'ml-auto bg-blue-500 text-white'
-                      : 'mr-auto bg-gray-200 text-gray-800'
-                  }`}
-                >
-                  {msg.text}
-                </div>
-              ))}
+              {messages.map((msg, idx) => {
+                const chatId = [currentUser.uid, selectedUser.id].sort().join('_');
+                return (
+                  <div key={msg.id || idx} className="flex items-center group">
+                    <div
+                      className={`max-w-xs p-2 rounded relative ${
+                        msg.senderId === currentUser.uid
+                          ? 'ml-auto bg-blue-500 text-white'
+                          : 'mr-auto bg-gray-200 text-gray-800'
+                      }`}
+                    >
+                      {msg.text}
+                      {msg.senderId === currentUser.uid && (
+                        <button
+                          onClick={() => deleteMessage(chatId, msg.id)}
+                          className="text-xs absolute top-0 right-1 opacity-0 group-hover:opacity-100 text-red-500"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
             <div className="p-4 border-t flex gap-2">
               <input

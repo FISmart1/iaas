@@ -3,6 +3,8 @@ import { auth, db } from '../../firebase/firebase';
 import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
+import { deleteDoc } from 'firebase/firestore';
+
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -18,6 +20,19 @@ const ProfilePage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [eskulList, setEskulList] = useState([]);
+
+  const handleDeleteEskul = async (id) => {
+  const confirm = window.confirm('Yakin ingin menghapus eskul ini?');
+  if (!confirm) return;
+
+  try {
+    await deleteDoc(doc(db, 'eskul', id));
+    setEskulList(prev => prev.filter(eskul => eskul.id !== id));
+  } catch (err) {
+    setError('Gagal menghapus eskul: ' + err.message);
+  }
+};
+
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -168,14 +183,22 @@ const ProfilePage = () => {
           <h3 className="text-xl font-bold mb-4">Eskul</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {eskulList.map((eskul) => (
-              <div key={eskul.id} className="bg-gray-100 border shadow rounded-lg p-4">
+  <div key={eskul.id} className="bg-gray-100 border shadow rounded-lg p-4">
     <h4 className="font-semibold text-lg mb-1">{eskul.nama}</h4>
-    <p className="text-sm text-gray-600 mb-1">Lokasi: {eskul.lokasi}</p>
-    <p className="text-sm text-gray-500">
-      Tanggal: {new Date(eskul.tanggal).toLocaleDateString()}
+    <p className="text-sm text-gray-600 mb-1">Lokasi: {eskul.lokasi || '-'}</p>
+    <p className="text-sm text-gray-500 mb-2">
+      Tanggal: {eskul.tanggal?.toDate ? eskul.tanggal.toDate().toLocaleDateString() : 'Tidak tersedia'}
     </p>
+    <p className="text-sm text-gray-700 mb-2">{eskul.deskripsi || ''}</p>
+    <button
+      onClick={() => handleDeleteEskul(eskul.id)}
+      className="text-red-600 hover:text-red-800 text-sm"
+    >
+      Hapus
+    </button>
   </div>
-            ))}
+))}
+
           </div>
         </div>
 
