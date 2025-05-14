@@ -50,29 +50,25 @@ const EskulForm = () => {
 
   return (
     <div className="max-w-xl mx-auto mt-10 p-6 bg-white rounded shadow">
-      <h2 className="text-2xl font-bold mb-4">Tambah Eskul</h2>
+      {/* Tombol Back */}
+      <button
+        onClick={() => navigate(-1)}
+        className="mb-4 text-blue-600 hover:text-blue-800 font-semibold"
+      >
+        &#8592; Kembali
+      </button>
+
+      <h2 className="text-2xl font-bold mb-4">Tambah Sertifikat</h2>
 
       {error && <p className="text-red-500 mb-3">{error}</p>}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block font-semibold">Nama Eskul</label>
+          <label className="block font-semibold">Nama Sertifikat</label>
           <input
             type="text"
             name="nama"
             value={eskulData.nama}
-            onChange={handleChange}
-            required
-            className="w-full border px-3 py-2 rounded"
-          />
-        </div>
-
-        <div>
-          <label className="block font-semibold">Tanggal Mengikuti</label>
-          <input
-            type="date"
-            name="tanggal"
-            value={eskulData.tanggal}
             onChange={handleChange}
             required
             className="w-full border px-3 py-2 rounded"
@@ -85,6 +81,18 @@ const EskulForm = () => {
             type="text"
             name="lokasi"
             value={eskulData.lokasi}
+            onChange={handleChange}
+            required
+            className="w-full border px-3 py-2 rounded"
+          />
+        </div>
+
+        <div>
+          <label className="block font-semibold">Tanggal Mengikuti</label>
+          <input
+            type="date"
+            name="tanggal"
+            value={eskulData.tanggal}
             onChange={handleChange}
             required
             className="w-full border px-3 py-2 rounded"

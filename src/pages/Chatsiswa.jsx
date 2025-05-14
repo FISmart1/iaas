@@ -164,7 +164,7 @@ const ChatRoom = () => {
                           onClick={() => deleteMessage(chatId, msg.id)}
                           className="text-xs absolute top-0 right-1 opacity-0 group-hover:opacity-100 text-red-500"
                         >
-                          ✕
+                          
                         </button>
                       )}
                     </div>
