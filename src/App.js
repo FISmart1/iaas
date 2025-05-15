@@ -13,7 +13,8 @@ import { useAuth } from "./contexts/authContext";
 import HeaderPage from "./components/header";
 import Chat from "./pages/Chatsiswa.jsx"
 import ChatRoomGuru from "./pages/Chatguru.jsx";
-import Eskul from "./components/form/sertif.jsx";
+import Sertif from "./components/form/sertif.jsx";
+import Eskul from "./components/form/eskul.jsx";
 
 // Buat komponen layout utama
 const MainLayout = ({ children }) => {
@@ -97,6 +98,14 @@ function App() {
       element: (
 
             <AdminDashboard />
+
+      ),
+    },
+    {
+      path: "/sertif",
+      element: (
+
+            <Sertif />
 
       ),
     },
