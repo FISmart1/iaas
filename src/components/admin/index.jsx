@@ -10,27 +10,41 @@ const AdminDashboard = () => {
   const { userData, setUserLoggedIn } = useAuth();
   const [otps, setOtps] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
+
+  const fetchOtps = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const q = query(otpCollection);
+      const querySnapshot = await getDocs(q);
+      const otpList = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setOtps(otpList);
+    } catch (err) {
+      setError('Gagal memuat data OTP');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (userData?.role === 'admin') {
-      const fetchOtps = async () => {
-        const q = query(otpCollection);
-        const querySnapshot = await getDocs(q);
-        const otpList = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        setOtps(otpList);
-        setLoading(false);
-      };
       fetchOtps();
     }
   }, [userData]);
 
   const handleDeleteOTP = async (id) => {
-    await deleteDoc(doc(firestore, "otps", id));
-    setOtps(otps.filter(otp => otp.id !== id));
+    if (!window.confirm('Yakin ingin menghapus OTP ini?')) return;
+    try {
+      await deleteDoc(doc(firestore, "otps", id));
+      setOtps(otps.filter(otp => otp.id !== id));
+    } catch (error) {
+      alert('Gagal menghapus OTP: ' + error.message);
+    }
   };
 
   const handleLogout = async () => {
@@ -48,74 +62,104 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-6xl mx-auto bg-white shadow-lg rounded-2xl p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-800">Admin Dashboard</h1>
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center p-6">
+      <div className="w-full max-w-5xl bg-white rounded-2xl shadow-lg p-8">
+        <header className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-semibold text-gray-900">Admin Dashboard</h1>
           <button
             onClick={handleLogout}
-            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition duration-200"
+            className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg transition duration-300 shadow-md"
           >
             Logout
           </button>
-        </div>
+        </header>
 
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-700">Daftar OTP</h2>
+        <section className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-medium text-gray-800">Daftar OTP</h2>
           <button
-            onClick={() => window.location.reload()}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm"
+            onClick={fetchOtps}
+            disabled={loading}
+            className={`bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-300 shadow-md ${
+              loading ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
           >
-            Refresh OTP
+            {loading ? 'Memuat...' : 'Refresh OTP'}
           </button>
-        </div>
+        </section>
 
-        {loading ? (
-          <p className="text-gray-500">Memuat...</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full border text-sm text-left">
-              <thead className="bg-gray-200 text-gray-700">
+        {error && (
+          <p className="mb-4 text-center text-red-600 font-medium">{error}</p>
+        )}
+
+        <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+          <table className="min-w-full divide-y divide-gray-200 text-left text-gray-700 text-sm">
+            <thead className="bg-gray-100">
+              <tr>
+                {['Email', 'OTP', 'Role', 'Waktu Dibuat', 'Status', 'Aksi'].map((header) => (
+                  <th
+                    key={header}
+                    className="px-6 py-3 font-semibold tracking-wide"
+                  >
+                    {header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {otps.length === 0 && !loading ? (
                 <tr>
-                  <th className="px-4 py-2 border">Email</th>
-                  <th className="px-4 py-2 border">OTP</th>
-                  <th className="px-4 py-2 border">Role</th>
-                  <th className="px-4 py-2 border">Waktu Dibuat</th>
-                  <th className="px-4 py-2 border">Status</th>
-                  <th className="px-4 py-2 border">Aksi</th>
+                  <td colSpan={6} className="text-center py-6 text-gray-400">
+                    Tidak ada data OTP
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {otps.map((otp) => (
-                  <tr key={otp.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 border">{otp.email}</td>
-                    <td className="px-4 py-2 border font-mono">{otp.otp}</td>
-                    <td className="px-4 py-2 border capitalize">{otp.role}</td>
-                    <td className="px-4 py-2 border">
+              ) : (
+                otps.map((otp) => (
+                  <tr
+                    key={otp.id}
+                    className="hover:bg-gray-50 transition-colors duration-200"
+                  >
+                    <td className="px-6 py-4 truncate max-w-xs">{otp.email}</td>
+                    <td className="px-6 py-4 font-mono tracking-widest">{otp.otp}</td>
+                    <td className="px-6 py-4 capitalize">{otp.role}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       {otp.createdAt?.toDate().toLocaleString() || '—'}
                     </td>
-                    <td className="px-4 py-2 border">
-                      <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                        otp.used ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
-                      }`}>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                          otp.used
+                            ? 'bg-red-200 text-red-800'
+                            : 'bg-green-200 text-green-800'
+                        }`}
+                      >
                         {otp.used ? 'Digunakan' : 'Belum digunakan'}
                       </span>
                     </td>
-                    <td className="px-4 py-2 border">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <button
                         onClick={() => handleDeleteOTP(otp.id)}
-                        className="text-red-600 hover:underline text-sm"
+                        className="text-red-500 hover:text-red-700 font-semibold transition"
+                        aria-label={`Hapus OTP untuk ${otp.email}`}
                       >
                         Hapus
                       </button>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            <Link >Database</Link>
-          </div>
-        )}
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Contoh Link tambahan yang kamu bisa sesuaikan */}
+        <div className="mt-6 text-right">
+          <Link
+            to="/database"
+            className="text-blue-600 hover:text-blue-800 font-medium transition"
+          >
+            Lihat Database &rarr;
+          </Link>
+        </div>
       </div>
     </div>
   );

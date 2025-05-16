@@ -30,15 +30,22 @@ const EskulForm = () => {
       return;
     }
 
+    // Validasi tanggal tidak boleh di masa depan
+    if (new Date(eskulData.tanggal) > new Date()) {
+      setError('Tanggal tidak boleh di masa depan');
+      return;
+    }
+
     setLoading(true);
+    setError('');
     try {
       await addDoc(collection(db, 'eskul'), {
-        nama: eskulData.nama,
+        nama: eskulData.nama.trim(),
         tanggal: Timestamp.fromDate(new Date(eskulData.tanggal)),
-        lokasi: eskulData.lokasi,
-        deskripsi: eskulData.deskripsi,
+        lokasi: eskulData.lokasi.trim(),
+        deskripsi: eskulData.deskripsi.trim(),
         userId: currentUser.uid,
-        createdAt: new Date(),
+        createdAt: Timestamp.fromDate(new Date()),
       });
       navigate('/siswa');
     } catch (err) {
@@ -50,62 +57,67 @@ const EskulForm = () => {
 
   return (
     <div className="max-w-xl mx-auto mt-10 p-6 bg-white rounded shadow">
-      {/* Tombol Back */}
       <button
         onClick={() => navigate(-1)}
         className="mb-4 text-blue-600 hover:text-blue-800 font-semibold"
+        aria-label="Kembali ke halaman sebelumnya"
       >
         &#8592; Kembali
       </button>
 
       <h2 className="text-2xl font-bold mb-4">Tambah Sertifikat</h2>
 
-      {error && <p className="text-red-500 mb-3">{error}</p>}
+      {error && <p className="text-red-500 mb-3" role="alert">{error}</p>}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label className="block font-semibold">Nama Sertifikat</label>
+          <label htmlFor="nama" className="block font-semibold mb-1">Nama Sertifikat</label>
           <input
+            id="nama"
             type="text"
             name="nama"
             value={eskulData.nama}
             onChange={handleChange}
             required
-            className="w-full border px-3 py-2 rounded"
+            className="w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
         </div>
 
         <div>
-          <label className="block font-semibold">Lokasi</label>
+          <label htmlFor="lokasi" className="block font-semibold mb-1">Lokasi</label>
           <input
+            id="lokasi"
             type="text"
             name="lokasi"
             value={eskulData.lokasi}
             onChange={handleChange}
             required
-            className="w-full border px-3 py-2 rounded"
+            className="w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
         </div>
 
         <div>
-          <label className="block font-semibold">Tanggal Mengikuti</label>
+          <label htmlFor="tanggal" className="block font-semibold mb-1">Tanggal Mengikuti</label>
           <input
+            id="tanggal"
             type="date"
             name="tanggal"
             value={eskulData.tanggal}
             onChange={handleChange}
             required
-            className="w-full border px-3 py-2 rounded"
+            max={new Date().toISOString().split('T')[0]} // batasi max tanggal hari ini
+            className="w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
         </div>
 
         <div>
-          <label className="block font-semibold">Deskripsi</label>
+          <label htmlFor="deskripsi" className="block font-semibold mb-1">Deskripsi</label>
           <textarea
+            id="deskripsi"
             name="deskripsi"
             value={eskulData.deskripsi}
             onChange={handleChange}
-            className="w-full border px-3 py-2 rounded"
+            className="w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
             rows={4}
           />
         </div>
@@ -113,7 +125,7 @@ const EskulForm = () => {
         <button
           type="submit"
           disabled={loading}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition disabled:opacity-60"
         >
           {loading ? 'Menyimpan...' : 'Simpan'}
         </button>
