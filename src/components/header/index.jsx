@@ -27,7 +27,6 @@ const HeaderPage = () => {
             <div className="w-96 bg-white text-gray-700 space-y-6 p-6 shadow-2xl border border-gray-200 rounded-3xl">
                 <div className="text-center">
                     <h1 className="text-3xl font-extrabold text-indigo-600">Ko<span className="text-pink-500">!</span>Chat</h1>
-                    <p className="text-sm mt-1 text-gray-500">Admin Dashboard</p>
                 </div>
 
                 <div className="space-y-4">
